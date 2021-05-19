@@ -1,141 +1,176 @@
 # NTU-AMMAI-CDFSL
 
-The source code of NTU-AMMAI-CDFSL.
+The source code of NTU-AMMAI-CDFSL 2021 version.
 
-### 06/04 Update
-
-The RAM usage issue: if your computer doesn't have enough ram for this project, you can first create a json file which contain all the image infomation (name, label etc.) and load the json file instead of all the images. If there is any further question, please let us know.
-
-### Datasets
-   * mini-ImageNet: https://drive.google.com/file/d/1zGGCKzspL0GSZhiDEp8rpVnB4i-jL2k_/view?usp=sharing
-   * EuroSAT: https://drive.google.com/file/d/1DUj510w7726Iga34gmmhLA4meVYULrBe/view?usp=sharing
-   * ISIC: https://drive.google.com/file/d/15jXP_rDEi_eusIK-kCz-DD5ZBFD3WeGF/view?usp=sharing
-
-### Pretrained Model
-   * ResNet10 Baseline/ProtoNet are provided in logs/checkpoints/miniImageNet.
+## First Steps
+   Download all trained baseline models and datasets via this link:
+   https://drive.google.com/drive/folders/14RD6uP2iik8fQoFz2W1baKJ2eK2rih-y?usp=sharing
 
 ## Description
-   See https://docs.google.com/document/d/1rNuAb3D0dcXI776eKrj8iNpE2LQmCE63WU7lRTOQGIU/edit?usp=sharing
+   https://docs.google.com/document/d/1VtVR45wBvQlSnap1AArqIvnjoUQeKdWFkWe9EksLEIw/edit?usp=sharing
 
-### Specific Tasks:
-
-   **EuroSAT**
-
-     • Shots: n = {5}
-
-   **ISIC2018**
-
-     • Shots: n = {5}
-
-
-### Environment
-   Python 3.7
+## Tracks
+   **track 1. Few-shot learning (fsl)**
    
-   Pytorch 1.3.1
+   - source domain: mini-ImageNet
+   - target domain: mini-ImageNet
+   - 5-way 5-shot in meta-test.
 
-### Steps
-   1. Download all the needed datasets via above links.
-   2. Change configuration in config.py to the correct paths in your own computer.
-   3. Train models on miniImageNet. (Note: You can only train your own model, other pretrained models are provided.)
-   - **Standard supervised learning on miniImageNet**
+   **track 2. Cross-domain Few-shot learning with single source domain (cdfsl-single)**
+   
+   - source domain: mini-ImageNet
+   - target domain: CropDisease, EuroSAT, ISIC
+   - 5-way 5-shot in meta-test.
+
+   **track 3. Cross-domain Few-shot learning with multiple source domains (cdfsl-multi)**
+   
+   - source domain: mini-ImageNet, cifar-100
+   - target domain: CropDisease, EuroSAT, ISIC
+   - 5-way 5-shot in meta-test.
+
+## Requirements and Steps
+   1. Download all the needed datasets and trained model via above link and place them to correct locations.
+   2. Change configuration in config.py to the correct paths in your own computer if needed.
+   3. **(requirement)** Meta-test the trained Baseline and ProtoNet on three tasks and report the results, more precisely, run the following commands.
+      ```bash
+         python meta_test_Baseline.py --task fsl --model ResNet10 --method baseline  --train_aug
+         python meta_test_Baseline.py --task cdfsl-single --model ResNet10 --method baseline  --train_aug 
+         python meta_test_Baseline.py --task cdfsl-multi --model ResNet10 --method baseline  --train_aug
+         python meta_test_few_shot_models.py --task fsl --model ResNet10 --method protonet  --train_aug
+         python meta_test_few_shot_models.py --task cdfsl-single --model ResNet10 --method protonet  --train_aug --finetune
+         python meta_test_few_shot_models.py --task cdfsl-multi --model ResNet10 --method protonet  --train_aug --finetune
+      ```
+      You need to run these commands now, because it takes **A LOT OF TIME**.
+   4. **(requirement)** Design a metric-learning based model (inherit the template in meta_template.py) and solve the three tasks. 
+   5. **(requirement)** Design a training method on dealing with multiple source domains. You can directly use your method to train your model in step 4 (in cdfsl-multi task).
+   6. (optional) You are encouraged to apply any speed-up improvements during both training and testing, just make sure you don't modify the evaluation protocol.
+   7. (optional) We have provided a fine-tuning method for metric-learning based model, you can simply use it or design your own ones. But please make sure you can't access query set in fine-tuning.
+# Training and Testing Commands - Details 
+   - **Command for training the baseline model**
 
        ```bash
-           python ./train.py --dataset miniImageNet --model ResNet10  --method baseline --train_aug
+           python train.py --task TASK --model MODEL  --method baseline --train_aug
        ```
-   - **Train meta-learning method (protonet) on miniImageNet**
-   
-       The available method list: [protonet]
+       
+       - TASK: [fsl/cdfsl-single/cdfsl-multi], please note that selecting fsl and cdfsl-single is exactly same in trainig (only trained on mini-ImageNet, so just choose one of them, not both).
+       - MODEL: ResNet10 for now, there are many other models in backbone.py, you can change them by yourself.
+       - train_aug: it's optional, apply augmentation to training data (suggested).
+       
+   - **Command for training the metric-learning based model**
 
        ```bash
-           python ./train.py --dataset miniImageNet --model ResNet10  --method protonet --n_shot 5 --train_aug
+           python train.py --task TASK --model MODEL  --method METHOD --n_shot 5 --train_aug
        ```
-   4. Test
-      You should know the following options:
+       
+       - TASK: [fsl/cdfsl-single/cdfsl-multi], please note that selecting fsl and cdfsl-single is exactly same in trainig (only trained on mini-ImageNet, so just choose one of them, not both).
+       
+       - MODEL: ResNet10 for now, there are many other models in backbone.py, you can change them by yourself.
+       - METHOD: protonet, and **YOUR METHOD**.
+       - n_shot: how many samples per class in training tasks, **you can modify this but the maximum should be less than 10.**
+       - train_aug: it's optional, apply augmentation to training data (suggested).
 
-      • --task: fsl/cdfsl, option for task 1(fsl) or task 2(cdfsl).
-
-      • --model: ResNet10, network architecture.
-
-      • --method: baseline/protonet/your-own-model.
-
-      • --train_aug: add this if you train the model with this option.
-
-      • --freeze_backbone: add this for inferring directly. (Do not add this if you want to fine-tune your model, you should only fine-tune models in task 2.)
-
-      There are two meta-test files:
-
-      * **meta_test_Baseline.py**:
-      
-        For Baseline, we will train a new linear classifier using support set.
-
-        ```bash
-            python meta_test_Baseline.py --task cdfsl --model ResNet10 --method baseline  --train_aug --freeze_backbone
-        ```
-         You can also train a new linear layer and fine-tune the backbone.
-
-        ```bash
-            python meta_test_Baseline.py --task cdfsl --model ResNet10 --method baseline  --train_aug
-        ```
-
-      * **meta_test_few_shot_models.py**:
-      
-        This method will apply the pseudo query set to the few-shot model you want to fine-tune with. 
-
-        The available method list: [protonet]
-
-        The available model list: [ResNet10]
+     - **TODO, you need to train your model by the following commands:**
+       
+       ```bash
+           python train.py --task fsl/cdfsl-single --model MODEL  --method YOUR_METHOD --n_shot 5 --train_aug
+           python train.py --task cdfsl-multi --model MODEL  --method YOUR_METHOD --n_shot 5 --train_aug
+       ```
+   - **Command for testing the baseline model**
         
-        ```bash
-            python meta_test_few_shot_models.py --task cdfsl --model ResNet10 --method protonet  --train_aug
-        ```
+       - For Baseline, we will train a new linear classifier using support set (a kind of finetuning) before inference when solveing all three tasks.
 
-   No matter which finetune method you chosse, a dataset contains 600 tasks.
+        ```bash
+            python meta_test_Baseline.py --task TASK --model MODEL --method baseline  --train_aug --freeze_backbone
+        ```
+       - TASK: [fsl/cdfsl-single/cdfsl-multi], three types of tasks, you need to select each of them.
+       - MODEL: ResNet10 for now, there are many other models in backbone.py, you can change them by yourself.
+       - METHOD: baseline.
+       - train_aug: you need to add this if you use it in the training (for finding the correct path).
+       - freeze_backbone: (optional) the backbone(ResNet10 in default) will be frozen during fine-tuning if you select this. 
+
+   - **Command for testing the metric-learning based model**
+      
+       - For metric-learning based models, we apply a pseudo query set (PQS) to fine-tune the model before inference when solveing cdfsl-related (task 2 and 3) tasks.
+
+        ```bash
+            python meta_test_few_shot_models.py --task TASK --model MODEL --method METHOD  --train_aug --finetune
+        ```
+       - TASK: [fsl/cdfsl-single/cdfsl-multi], three types of tasks, you need to select each of them.
+       - MODEL: ResNet10 for now, there are many other models in backbone.py, you can change them by yourself.
+       - METHOD: protonet and **YOUR METHOD**.
+       - train_aug: you need to add this if you use it in the training (for finding the correct path).
+       - finetune: (optional) use the PQS to finetune the model if selected, you can design your own fine-tuning method, just make sure you **CAN'T** access query set in testing.
+
+   When you meta-testing a model, a dataset contains 600 tasks.
 
    After evaluating 600 times, you will see the result like this: 600 Test Acc = 49.91% +- 0.44%.
 
-### Results
+## Result Table
 
-| Models  | miniImageNet | EuroSAT | ISIC |
-| ------------- | ------------- | ------------- | ------------- |
-| Baseline | 68.10% ± 0.67% | 75.69% ± 0.66% / 79.08% ± 0.61% | 43.56% ± 0.60% / 48.11% ± 0.64% | 
-| ProtoNet | 66.33% ± 0.65% | 77.45% ± 0.56% / 81.45% ± 0.63% | 41.73% ± 0.56% / 46.72% ± 0.59% |
+You need to provide a table like this in your report.
 
-For EuroSAT and ISIC, the result w/o and w/ fine-tuning are the first and second accuracy, respectively.
+<table>
+    <thead>
+        <tr>
+            <th rowspan=2>Models</th>
+            <th>fsl</th>
+            <th colspan=3>cdfsl-single</th>
+            <th colspan=3>cdfsl-multi</th>
+        </tr>
+        <tr>
+            <th>mini-ImageNet</th>
+            <th>CropDisease</th>
+            <th>EuroSAT</th>
+            <th>ISIC</th>
+            <th>CropDisease</th>
+            <th>EuroSAT</th>
+            <th>ISIC</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Baseline</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+        </tr>
+        <tr>
+            <td>ProtoNet</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+        </tr>
+        <tr>
+            <td>YOUR METHOD</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+            <td>XX% ± yy%</td>
+        </tr>
+    </tbody>
+</table>
 
-### TODOs
-   1. Try to re-run all baseline models for both tasks. 
+You can provide more results if you have multiple variants.
 
-      ```bash
-           python meta_test_Baseline.py --task fsl --model ResNet10 --method baseline  --train_aug --freeze_backbone
-      ```
+Also, you can put result with () in baseline methods cells if you have tried different settings. E.g. add --freeze_backbone or not wehn testing Baseline.
 
-      ```bash
-           python meta_test_Baseline.py --task cdfsl --model ResNet10 --method baseline  --train_aug 
-      ```
+At the end, you can also provide the result of baseline models with your training method in cdfsl-multi task, if your training method is suitable for the baseline methods.
 
-      ```bash
-           python meta_test_few_shot_models.py --task fsl --model ResNet10 --method protonet  --train_aug --freeze_backbone
-      ```
+## Contact Information
+TA: Jia-Fong Yeh (jiafongyeh@ieee.org)
 
-      ```bash
-           python meta_test_few_shot_models.py --task cdfsl --model ResNet10 --method protonet  --train_aug
-      ```
-
-   2. Design your own model, and report your results for both tasks.
-      - You should inherit the template in meta_template.py, and design your own model.
-      - For task 2, you can infer the query set directly, or you can also design your fine-tuning method (You can stil use pseudo query set to fine-tune).
-
-       ```bash
-           python meta_test_few_shot_models.py --task fsl --model ResNet10 --method your_method  --train_aug --freeze_backbone
-      ```
-
-      ```bash
-           python meta_test_few_shot_models.py --task cdfsl --model ResNet10 --method your_method  --train_aug
-      ```
-
-      - Hint: large margin methods or feature generalization methods may be helpful to solve the problem.
-      
-### Contact Information
-   H.T. Su (d06944009@ntu.edu.tw)
-
-   Jia-Fong Yeh (jiafongyeh@ieee.org)
+## Reference
+This repository is modified from the following repos.
+- https://github.com/wyharveychen/CloserLookFewShot
+- https://github.com/IBM/cdfsl-benchmark
