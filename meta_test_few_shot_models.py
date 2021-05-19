@@ -17,7 +17,7 @@ from methods.protonet import ProtoNet
 
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file 
 from utils import *
-from datasets import miniImageNet_few_shot, EuroSAT_few_shot, ISIC_few_shot
+from datasets import miniImageNet_few_shot, CropDisease_few_shot, EuroSAT_few_shot, ISIC_few_shot
 
 from pseudo_query_generator import PseudoQeuryGenerator
 
